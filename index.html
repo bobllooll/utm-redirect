@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>UTM Redirect...</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+</head>
+<body>
+    <h3>Berechne Koordinaten und leite weiter...</h3>
+    
+    <script>
+        function redirect() {
+            // 1. URL Parameter auslesen
+            //URL.de?x=386159.433&y=5777782.213&zone=32
+            const params = new URLSearchParams(window.location.search);
+            const x = parseFloat(params.get('x')); // Easting
+            const y = parseFloat(params.get('y')); // Northing
+            const zone = params.get('zone') || '32'; // Standard ist Zone 32, falls leer
+
+            // Sicherheitscheck: Sind Werte da?
+            if (!x || !y) {
+                document.body.innerHTML = "Fehler: Parameter fehlen. Bitte ?x=...&y=...&zone=... angeben.";
+                return;
+            }
+
+            // 2. Definition der Koordinatensysteme für Proj4
+            // WGS84 (Das Zielsystem für Google Maps)
+            const wgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
+            
+            // UTM Definition (dynamisch basierend auf der Zone)
+            // +south kann hinzugefügt werden, falls Südhalbkugel
+            const utm = `+proj=utm +zone=${zone} +ellps=WGS84 +datum=WGS84 +units=m +no_defs`;
+
+            try {
+                // 3. Umrechnung: UTM -> WGS84
+                // Proj4 gibt [Longitude, Latitude] zurück!
+                const result = proj4(utm, wgs84, [x, y]);
+                
+                const lon = result[0]; // Länge
+                const lat = result[1]; // Breite
+
+                // 4. Weiterleitung zu Google Maps
+                // Format: https://www.google.com/maps?q=Lat,Lon
+                const gmapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+
+                // Format: Für Route
+                const RouteUrl= `https://www.google.com/maps/dir//${lat},${lon}/`
+                
+                // Redirect ausführen
+                window.location.href = gmapsUrl;
+
+            } catch (e) {
+                document.body.innerHTML = "Fehler bei der Umrechnung: " + e.message;
+            }
+        }
+
+        // Script starten
+        redirect();
+    </script>
+</body>
+</html>
